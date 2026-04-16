@@ -115,6 +115,10 @@ class FabricUIManagerBinding : public jni::HybridClass<FabricUIManagerBinding>,
 
   void schedulerShouldSynchronouslyUpdateViewOnUIThread(Tag tag, const folly::dynamic &props) override;
 
+  void schedulerShouldSynchronouslyUpdateAnimatedViewsOnUIThread(
+      const std::vector<int> &intBuffer,
+      const std::vector<double> &doubleBuffer) override;
+
   void schedulerDidUpdateShadowTree(const std::unordered_map<Tag, folly::dynamic> &tagToProps) override;
 
   void setPixelDensity(float pointScaleFactor);

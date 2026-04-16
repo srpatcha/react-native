@@ -35,6 +35,8 @@ import com.facebook.infer.annotation.ThreadConfined;
 import com.facebook.proguard.annotations.DoNotStripAny;
 import com.facebook.react.bridge.ColorPropConverter;
 import com.facebook.react.bridge.GuardedRunnable;
+import com.facebook.react.bridge.JavaOnlyArray;
+import com.facebook.react.bridge.JavaOnlyMap;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.NativeArray;
 import com.facebook.react.bridge.NativeMap;
@@ -809,6 +811,251 @@ public class FabricUIManager
 
     ReactMarker.logFabricMarker(
         ReactMarkerConstants.FABRIC_UPDATE_UI_MAIN_THREAD_END, null, commitNumber);
+  }
+
+  @SuppressWarnings("unused")
+  @UiThread
+  @ThreadConfined(UI)
+  public void synchronouslyUpdateViewBatch(final int[] intBuffer, final double[] doubleBuffer) {
+    UiThreadUtil.assertOnUiThread();
+
+    // Decode buffer protocol and apply props per-view.
+    // For the skeleton implementation, we decode into ReadableMap per-view
+    // and delegate to the existing synchronouslyUpdateViewOnUIThread path.
+    int intIdx = 0;
+    int doubleIdx = 0;
+    while (intIdx < intBuffer.length) {
+      int command = intBuffer[intIdx++];
+      if (command != 1) { // CMD_START_OF_VIEW
+        break;
+      }
+      int viewTag = intBuffer[intIdx++];
+      JavaOnlyMap props = new JavaOnlyMap();
+
+      while (intIdx < intBuffer.length) {
+        command = intBuffer[intIdx++];
+        if (command == 4) { // CMD_END_OF_VIEW
+          break;
+        }
+
+        switch (command) {
+          case 10: // CMD_OPACITY
+          case 11: // CMD_ELEVATION
+          case 12: // CMD_Z_INDEX
+          case 13: // CMD_SHADOW_OPACITY
+          case 14: // CMD_SHADOW_RADIUS
+            props.putDouble(commandToString(command), doubleBuffer[doubleIdx++]);
+            break;
+
+          case 15: // CMD_BACKGROUND_COLOR
+          case 16: // CMD_COLOR
+          case 17: // CMD_TINT_COLOR
+          case 40: // CMD_BORDER_COLOR
+          case 41: // CMD_BORDER_TOP_COLOR
+          case 42: // CMD_BORDER_BOTTOM_COLOR
+          case 43: // CMD_BORDER_LEFT_COLOR
+          case 44: // CMD_BORDER_RIGHT_COLOR
+          case 45: // CMD_BORDER_START_COLOR
+          case 46: // CMD_BORDER_END_COLOR
+            props.putInt(commandToString(command), intBuffer[intIdx++]);
+            break;
+
+          case 20:
+          case 21:
+          case 22:
+          case 23:
+          case 24:
+          case 25:
+          case 26:
+          case 27:
+          case 28:
+          case 29:
+          case 30:
+          case 31:
+          case 32:
+            {
+              // Border radius: value in doubleBuffer, unit in intBuffer
+              double value = doubleBuffer[doubleIdx++];
+              int unit = intBuffer[intIdx++];
+              if (unit == 202) { // CMD_UNIT_PX
+                props.putDouble(commandToString(command), value);
+              } else if (unit == 203) { // CMD_UNIT_PERCENT
+                props.putString(commandToString(command), value + "%");
+              }
+              break;
+            }
+
+          case 2:
+            { // CMD_START_OF_TRANSFORM
+              JavaOnlyArray transform = new JavaOnlyArray();
+              while (intIdx < intBuffer.length) {
+                int transformCmd = intBuffer[intIdx++];
+                if (transformCmd == 3) { // CMD_END_OF_TRANSFORM
+                  props.putArray("transform", transform);
+                  break;
+                }
+                String name = transformCommandToString(transformCmd);
+                switch (transformCmd) {
+                  case 102:
+                  case 103:
+                  case 104:
+                  case 112:
+                    {
+                      // scale, scaleX, scaleY, perspective
+                      double val = doubleBuffer[doubleIdx++];
+                      JavaOnlyMap entry = new JavaOnlyMap();
+                      entry.putDouble(name, val);
+                      transform.pushMap(entry);
+                      break;
+                    }
+                  case 100:
+                  case 101:
+                    {
+                      // translateX, translateY
+                      double val = doubleBuffer[doubleIdx++];
+                      int unitCmd = intBuffer[intIdx++];
+                      JavaOnlyMap entry = new JavaOnlyMap();
+                      if (unitCmd == 202) { // PX
+                        entry.putDouble(name, val);
+                      } else { // PERCENT
+                        entry.putString(name, val + "%");
+                      }
+                      transform.pushMap(entry);
+                      break;
+                    }
+                  case 105:
+                  case 106:
+                  case 107:
+                  case 108:
+                  case 109:
+                  case 110:
+                    {
+                      // rotate, rotateX/Y/Z, skewX/Y
+                      double angle = doubleBuffer[doubleIdx++];
+                      int unitCmd = intBuffer[intIdx++];
+                      String unitStr = unitCmd == 200 ? "deg" : "rad";
+                      JavaOnlyMap entry = new JavaOnlyMap();
+                      entry.putString(name, angle + unitStr);
+                      transform.pushMap(entry);
+                      break;
+                    }
+                  case 111:
+                    {
+                      // matrix
+                      int size = intBuffer[intIdx++];
+                      JavaOnlyArray matrix = new JavaOnlyArray();
+                      for (int m = 0; m < size; m++) {
+                        matrix.pushDouble(doubleBuffer[doubleIdx++]);
+                      }
+                      JavaOnlyMap entry = new JavaOnlyMap();
+                      entry.putArray(name, matrix);
+                      transform.pushMap(entry);
+                      break;
+                    }
+                }
+              }
+              break;
+            }
+        }
+      }
+      synchronouslyUpdateViewOnUIThread(viewTag, props);
+    }
+  }
+
+  private static String commandToString(int command) {
+    switch (command) {
+      case 10:
+        return "opacity";
+      case 11:
+        return "elevation";
+      case 12:
+        return "zIndex";
+      case 13:
+        return "shadowOpacity";
+      case 14:
+        return "shadowRadius";
+      case 15:
+        return "backgroundColor";
+      case 16:
+        return "color";
+      case 17:
+        return "tintColor";
+      case 20:
+        return "borderRadius";
+      case 21:
+        return "borderTopLeftRadius";
+      case 22:
+        return "borderTopRightRadius";
+      case 23:
+        return "borderTopStartRadius";
+      case 24:
+        return "borderTopEndRadius";
+      case 25:
+        return "borderBottomLeftRadius";
+      case 26:
+        return "borderBottomRightRadius";
+      case 27:
+        return "borderBottomStartRadius";
+      case 28:
+        return "borderBottomEndRadius";
+      case 29:
+        return "borderStartStartRadius";
+      case 30:
+        return "borderStartEndRadius";
+      case 31:
+        return "borderEndStartRadius";
+      case 32:
+        return "borderEndEndRadius";
+      case 40:
+        return "borderColor";
+      case 41:
+        return "borderTopColor";
+      case 42:
+        return "borderBottomColor";
+      case 43:
+        return "borderLeftColor";
+      case 44:
+        return "borderRightColor";
+      case 45:
+        return "borderStartColor";
+      case 46:
+        return "borderEndColor";
+      default:
+        return "unknown";
+    }
+  }
+
+  private static String transformCommandToString(int command) {
+    switch (command) {
+      case 100:
+        return "translateX";
+      case 101:
+        return "translateY";
+      case 102:
+        return "scale";
+      case 103:
+        return "scaleX";
+      case 104:
+        return "scaleY";
+      case 105:
+        return "rotate";
+      case 106:
+        return "rotateX";
+      case 107:
+        return "rotateY";
+      case 108:
+        return "rotateZ";
+      case 109:
+        return "skewX";
+      case 110:
+        return "skewY";
+      case 111:
+        return "matrix";
+      case 112:
+        return "perspective";
+      default:
+        return "unknown";
+    }
   }
 
   @SuppressLint("NotInvokedPrivateMethod")

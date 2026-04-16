@@ -65,6 +65,13 @@ class UIManagerDelegate {
   virtual void uiManagerShouldSynchronouslyUpdateViewOnUIThread(Tag tag, const folly::dynamic &props) = 0;
 
   /*
+   * Batched synchronous view update for animated props.
+   */
+  virtual void uiManagerShouldSynchronouslyUpdateAnimatedViewsOnUIThread(
+      const std::vector<int> &intBuffer,
+      const std::vector<double> &doubleBuffer) = 0;
+
+  /*
    * Called after updateShadowTree is invoked.
    */
   virtual void uiManagerDidUpdateShadowTree(const std::unordered_map<Tag, folly::dynamic> &tagToProps) = 0;

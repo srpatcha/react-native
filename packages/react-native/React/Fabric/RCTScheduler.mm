@@ -79,6 +79,13 @@ class SchedulerDelegateProxy : public SchedulerDelegate {
     [scheduler.delegate schedulerDidSynchronouslyUpdateViewOnUIThread:tag props:props];
   }
 
+  void schedulerShouldSynchronouslyUpdateAnimatedViewsOnUIThread(
+      const std::vector<int> &intBuffer,
+      const std::vector<double> &doubleBuffer) override
+  {
+    // No-op on iOS. Batched animated prop updates are Android-only.
+  }
+
   void schedulerDidUpdateShadowTree(const std::unordered_map<Tag, folly::dynamic> &tagToProps) override
   {
     // Does nothing.

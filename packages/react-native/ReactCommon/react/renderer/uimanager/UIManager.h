@@ -85,6 +85,10 @@ class UIManager final : public ShadowTreeDelegate {
 
   void synchronouslyUpdateViewOnUIThread(Tag tag, const folly::dynamic &props);
 
+  void synchronouslyUpdateViewBatchOnUIThread(
+      const std::vector<int> &intBuffer,
+      const std::vector<double> &doubleBuffer);
+
   /*
    * Provides access to a UIManagerBinding.
    * The `callback` methods will not be called if the internal pointer to

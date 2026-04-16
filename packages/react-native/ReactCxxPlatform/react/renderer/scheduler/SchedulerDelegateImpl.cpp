@@ -71,6 +71,13 @@ void SchedulerDelegateImpl::schedulerShouldSynchronouslyUpdateViewOnUIThread(
   mountingManager_->synchronouslyUpdateViewOnUIThread(tag, props);
 }
 
+void SchedulerDelegateImpl::
+    schedulerShouldSynchronouslyUpdateAnimatedViewsOnUIThread(
+        const std::vector<int>& /*intBuffer*/,
+        const std::vector<double>& /*doubleBuffer*/) {
+  // No-op on CxxPlatform. Batched animated prop updates are Android-only.
+}
+
 void SchedulerDelegateImpl::schedulerDidUpdateShadowTree(
     const std::unordered_map<Tag, folly::dynamic>& tagToProps) {
   mountingManager_->onUpdateShadowTree(tagToProps);

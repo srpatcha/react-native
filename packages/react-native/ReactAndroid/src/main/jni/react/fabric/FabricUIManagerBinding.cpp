@@ -792,6 +792,16 @@ void FabricUIManagerBinding::schedulerShouldSynchronouslyUpdateViewOnUIThread(
   }
 }
 
+void FabricUIManagerBinding::
+    schedulerShouldSynchronouslyUpdateAnimatedViewsOnUIThread(
+        const std::vector<int>& intBuffer,
+        const std::vector<double>& doubleBuffer) {
+  if (ReactNativeFeatureFlags::cxxNativeAnimatedEnabled() && mountingManager_) {
+    mountingManager_->synchronouslyUpdateViewBatchOnUIThread(
+        intBuffer, doubleBuffer);
+  }
+}
+
 void FabricUIManagerBinding::schedulerDidUpdateShadowTree(
     const std::unordered_map<Tag, folly::dynamic>& /*tagToProps*/) {
   // no-op

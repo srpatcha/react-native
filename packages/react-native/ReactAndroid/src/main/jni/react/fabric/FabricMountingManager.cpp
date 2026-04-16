@@ -1229,6 +1229,33 @@ void FabricMountingManager::synchronouslyUpdateViewOnUIThread(
   synchronouslyUpdateViewOnUIThreadJNI(javaUIManager_, viewTag, propsMap);
 }
 
+void FabricMountingManager::synchronouslyUpdateViewBatchOnUIThread(
+    const std::vector<int>& intBuffer,
+    const std::vector<double>& doubleBuffer) {
+  auto env = jni::Environment::current();
+
+  auto jIntArray = env->NewIntArray(static_cast<jsize>(intBuffer.size()));
+  env->SetIntArrayRegion(
+      jIntArray, 0, static_cast<jsize>(intBuffer.size()), intBuffer.data());
+
+  auto jDoubleArray =
+      env->NewDoubleArray(static_cast<jsize>(doubleBuffer.size()));
+  env->SetDoubleArrayRegion(
+      jDoubleArray,
+      0,
+      static_cast<jsize>(doubleBuffer.size()),
+      doubleBuffer.data());
+
+  static auto synchronouslyUpdateViewBatchJNI =
+      JFabricUIManager::javaClassStatic()
+          ->getMethod<void(jintArray, jdoubleArray)>(
+              "synchronouslyUpdateViewBatch");
+  synchronouslyUpdateViewBatchJNI(javaUIManager_, jIntArray, jDoubleArray);
+
+  env->DeleteLocalRef(jIntArray);
+  env->DeleteLocalRef(jDoubleArray);
+}
+
 void FabricMountingManager::scheduleReactRevisionMerge(SurfaceId surfaceId) {
   static const auto scheduleReactRevisionMerge =
       JFabricUIManager::javaClassStatic()->getMethod<void(int32_t)>(

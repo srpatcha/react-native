@@ -93,6 +93,9 @@ class Scheduler final : public UIManagerDelegate {
       bool isJSResponder,
       bool blockNativeResponder) override;
   void uiManagerShouldSynchronouslyUpdateViewOnUIThread(Tag tag, const folly::dynamic &props) override;
+  void uiManagerShouldSynchronouslyUpdateAnimatedViewsOnUIThread(
+      const std::vector<int> &intBuffer,
+      const std::vector<double> &doubleBuffer) override;
   void uiManagerDidUpdateShadowTree(const std::unordered_map<Tag, folly::dynamic> &tagToProps) override;
   void uiManagerShouldAddEventListener(std::shared_ptr<const EventListener> listener) final;
   void uiManagerShouldRemoveEventListener(const std::shared_ptr<const EventListener> &listener) final;

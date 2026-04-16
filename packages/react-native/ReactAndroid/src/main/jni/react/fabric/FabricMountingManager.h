@@ -68,6 +68,10 @@ class FabricMountingManager final {
 
   void synchronouslyUpdateViewOnUIThread(Tag viewTag, const folly::dynamic &props);
 
+  void synchronouslyUpdateViewBatchOnUIThread(
+      const std::vector<int> &intBuffer,
+      const std::vector<double> &doubleBuffer);
+
   void scheduleReactRevisionMerge(SurfaceId surfaceId);
 
  private:

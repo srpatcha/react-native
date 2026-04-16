@@ -752,6 +752,15 @@ void UIManager::synchronouslyUpdateViewOnUIThread(
   }
 }
 
+void UIManager::synchronouslyUpdateViewBatchOnUIThread(
+    const std::vector<int>& intBuffer,
+    const std::vector<double>& doubleBuffer) {
+  if (delegate_ != nullptr) {
+    delegate_->uiManagerShouldSynchronouslyUpdateAnimatedViewsOnUIThread(
+        intBuffer, doubleBuffer);
+  }
+}
+
 #pragma mark ContextContainer
 
 std::shared_ptr<const ContextContainer> UIManager::getContextContainer() const {
